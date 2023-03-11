@@ -405,6 +405,7 @@ __attribute__((noinline)) bool WriteCmpArgs(
 // Returns true on success.
 static bool StartSendingOutputsToEngine(
     centipede::SharedMemoryBlobSequence &outputs_blobseq) {
+  outputs_blobseq.RewindToEnd();
   return centipede::BatchResult::WriteInputBegin(outputs_blobseq);
 }
 
@@ -412,6 +413,7 @@ static bool StartSendingOutputsToEngine(
 // Returns true on success.
 static bool FinishSendingOutputsToEngine(
     centipede::SharedMemoryBlobSequence &outputs_blobseq) {
+  outputs_blobseq.RewindToEnd();
   // Copy features to shared memory.
   if (!centipede::BatchResult::WriteOneFeatureVec(
           g_features.data(), g_features.size(), outputs_blobseq)) {
@@ -713,16 +715,21 @@ GlobalRunnerState::GlobalRunnerState() {
   MaybePopluateReversePCTable();
 }
 
+static void CollectCoverage(int exit_status) {
+  PostProcessCoverage(exit_status);
+  centipede::SharedMemoryBlobSequence outputs_blobseq(state.arg2);
+  StartSendingOutputsToEngine(outputs_blobseq);
+  FinishSendingOutputsToEngine(outputs_blobseq);
+}
+
 GlobalRunnerState::~GlobalRunnerState() {
   // The process is winding down, but CentipedeRunnerMain did not run.
   // This means, the binary is standalone with its own main(), and we need to
   // report the coverage now.
-  if (!state.centipede_runner_main_executed && state.HasFlag(":shmem:")) {
-    int exit_status = EXIT_SUCCESS;  // TODO(kcc): do we know our exit status?
-    PostProcessCoverage(exit_status);
-    centipede::SharedMemoryBlobSequence outputs_blobseq(state.arg2);
-    StartSendingOutputsToEngine(outputs_blobseq);
-    FinishSendingOutputsToEngine(outputs_blobseq);
+  if (!state.centipede_runner_main_executed && state.HasFlag(":shmem:") &&
+      !CentipedeManualCoverage()) {
+    // TODO(kcc): do we know our exit status?
+    CollectCoverage(EXIT_SUCCESS);
   }
 }
 
@@ -796,3 +803,12 @@ extern "C" int LLVMFuzzerRunDriver(
 
 extern "C" __attribute__((used)) void CentipedeIsPresent() {}
 extern "C" __attribute__((used)) void __libfuzzer_is_present() {}
+
+extern "C" int CentipedeManualCoverage() { return 0; }
+
+extern "C" void CentipedeCollectCoverage(int exit_status) {
+  centipede::PrintErrorAndExitIf(
+      !CentipedeManualCoverage() || !centipede::state.arg2,
+      "invalid call to CentipedeCollectCoverage");
+  centipede::CollectCoverage(exit_status);
+}

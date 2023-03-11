@@ -72,23 +72,31 @@ bool BatchResult::WriteCmpArgs(const uint8_t *v0, const uint8_t *v1,
 bool BatchResult::Read(SharedMemoryBlobSequence &blobseq) {
   size_t num_begins = 0;
   size_t num_ends = 0;
+  size_t nesting = 0;
   const size_t num_expected_tuples = results().size();
   ExecutionResult *current_execution_result = nullptr;
   while (true) {
     auto blob = blobseq.Read();
     if (!blob.IsValid()) break;
     if (blob.tag == kTagInputBegin) {
-      if (num_begins != num_ends) return false;
-      ++num_begins;
-      if (num_begins > num_expected_tuples) return false;
-      current_execution_result = &results()[num_ends];
-      current_execution_result->clear();
+      if (num_begins != num_ends) {
+        nesting++;
+      } else {
+        ++num_begins;
+        if (num_begins > num_expected_tuples) return false;
+        current_execution_result = &results()[num_ends];
+        current_execution_result->clear();
+      }
       continue;
     }
     if (blob.tag == kTagInputEnd) {
-      ++num_ends;
-      if (num_ends != num_begins) return false;
-      current_execution_result = nullptr;
+      if (nesting) {
+        nesting--;
+      } else {
+        ++num_ends;
+        if (num_ends != num_begins) return false;
+        current_execution_result = nullptr;
+      }
       continue;
     }
     if (blob.tag == kTagCmpArgs) {
@@ -102,6 +110,7 @@ bool BatchResult::Read(SharedMemoryBlobSequence &blobseq) {
     }
     if (blob.tag == kTagStats) {
       if (blob.size != sizeof(ExecutionResult::Stats)) return false;
+      // TODO: merge stats.
       memcpy(&current_execution_result->stats(), blob.data, blob.size);
       continue;
     }
@@ -110,8 +119,7 @@ bool BatchResult::Read(SharedMemoryBlobSequence &blobseq) {
       size_t features_size = blob.size / sizeof(features_beg[0]);
       FeatureVec &features = current_execution_result->mutable_features();
       // if features.capacity() >= features_size, this will not cause malloc.
-      features.resize(0);
-      features.insert(features.begin(), features_beg,
+      features.insert(features.end(), features_beg,
                       features_beg + features_size);
     }
   }
