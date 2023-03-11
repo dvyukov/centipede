@@ -646,11 +646,6 @@ static void SetLimits() {
       struct rlimit rlimit_as = {limit_in_bytes, limit_in_bytes};
       setrlimit(RLIMIT_AS, &rlimit_as);
     }
-  } else {
-    fprintf(stderr,
-            "Not using RLIMIT_AS; "
-            "VmSize is %zdGb, suspecting ASAN/MSAN/TSAN\n",
-            vm_size_in_bytes >> 30);
   }
 }
 
