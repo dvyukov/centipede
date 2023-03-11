@@ -1,0 +1,66 @@
+# Copyright 2023 The Centipede Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+cc_library(
+    name = "lib",
+    srcs = [
+        "common.cc",
+        "help.cc",
+        "syscalls.cc",
+    ],
+    hdrs = [
+        "common.h",
+        "help.h",
+        "syscalls.h",
+    ],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "blender",
+    srcs = [
+        "blender.cc",
+        "centipede.cc",
+    ],
+    linkstatic = 1,
+    deps = [
+        ":lib",
+        "@centipede//:centipede_runner_no_main",
+    ],
+    alwayslink = 1,
+)
+
+cc_binary(
+    name = "blender.so",
+    srcs = [
+        "blender.cc",
+        "centipede.cc",
+    ],
+    linkshared = 1,
+    deps = [
+        ":lib",
+        "@centipede//:centipede_runner_no_main",
+    ],
+)
+
+cc_test(
+    name = "blender_test",
+    srcs = [
+        "help_test.cc",
+    ],
+    deps = [
+        ":lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
