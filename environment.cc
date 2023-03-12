@@ -355,7 +355,7 @@ Environment::Environment(const std::vector<std::string> &argv)
       serialize_shard_loads(absl::GetFlag(FLAGS_serialize_shard_loads)),
       seed(absl::GetFlag(FLAGS_seed)),
       prune_frequency(absl::GetFlag(FLAGS_prune_frequency)),
-      address_space_limit_mb(absl::GetFlag(FLAGS_address_space_limit_mb)),
+      address_space_limit_mb(absl::GetFlag(FLAGS_address_space_limit_mb) + 2 * absl::GetFlag(FLAGS_shmem_size_mb)),
       rss_limit_mb(absl::GetFlag(FLAGS_rss_limit_mb)),
       timeout_per_input(absl::GetFlag(FLAGS_timeout_per_input)),
       timeout_per_batch(ComputeTimeoutPerBatch(    //
