@@ -45,12 +45,10 @@ cc_binary(
     name = "blender.so",
     srcs = [
         "blender.cc",
-        "centipede.cc",
     ],
     linkshared = 1,
     deps = [
         ":lib",
-        "@centipede//:centipede_runner_no_main",
     ],
 )
 
