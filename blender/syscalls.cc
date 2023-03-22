@@ -378,6 +378,13 @@ std::optional<ssize_t> sys_sendmsg(int fd, msghdr* msg, int flags) {
   return 1;
 }
 
+std::optional<ssize_t> sys_sendmmsg(int fd, mmsghdr* mmsg, unsigned vlen,
+                                    unsigned flags) {
+  if (IsRealFD(fd)) return {};
+  // TODO(dvyukov): count how many bytes there is.
+  return 1;
+}
+
 int sys_epoll_create(int size) { return fd_seq++; }
 
 int sys_epoll_create1(int flags) { return fd_seq++; }
@@ -497,6 +504,17 @@ int sys_newfstatat(int dfd, const char* filename, kernel_stat* stat, int flag) {
   stat->atime %= 1000000000;
   stat->mtime %= 1000000000;
   stat->ctime %= 1000000000;
+  return 0;
+}
+
+int sys_statx(int dfd, const char* filename, unsigned flags, unsigned int mask,
+              struct statx* stat) {
+  RandData(stat, sizeof(*stat));
+  stat->stx_mask = mask;
+  stat->stx_atime.tv_nsec %= 1000000000;
+  stat->stx_btime.tv_nsec %= 1000000000;
+  stat->stx_ctime.tv_nsec %= 1000000000;
+  stat->stx_mtime.tv_nsec %= 1000000000;
   return 0;
 }
 
@@ -626,6 +644,7 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     INTERCEPT(write);
     INTERCEPT(writev);
     INTERCEPT(sendmsg);
+    INTERCEPT(sendmmsg);
     INTERCEPT(pwrite64);
     INTERCEPT(epoll_create);
     INTERCEPT(epoll_create1);
@@ -643,6 +662,7 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     INTERCEPT(fstat);
     INTERCEPT(lstat);
     INTERCEPT(newfstatat);
+    INTERCEPT(statx);
     INTERCEPT(dup);
     INTERCEPT(dup2);
     INTERCEPT(dup3);
@@ -677,6 +697,8 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     SYSCALL(clock_gettime);
     SYSCALL(getpriority);
     SYSCALL(get_mempolicy);
+    SYSCALL(pkey_alloc);
+    SYSCALL(pkey_mprotect);
 
     // TODO(dvyukov): implement some of these, move the rest to the seccomp
     // filter.
@@ -709,6 +731,7 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     IGNORE(rename);
     IGNORE(unlink);
     IGNORE(symlink);
+    IGNORE(linkat);
     IGNORE(mkdir);
     IGNORE(mkdirat);
 
