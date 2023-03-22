@@ -281,6 +281,10 @@ int sys_pipe2(int fds[2], int flags) {
 
 int sys_pipe(int fds[2]) { return sys_pipe2(fds, 0); }
 
+int sys_eventfd2(unsigned count, int flags) { return fd_seq++; }
+
+int sys_eventfd(unsigned count) { return sys_eventfd2(count, 0); }
+
 int sys_statfs(const char* filename, struct statfs* buf) {
   RandData(buf, sizeof(*buf));
   return 0;
@@ -590,7 +594,7 @@ int sys_restart_syscall() {
     return -ENOMEM;
 
 Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
-  if (OneOf(10000)) return -ENOMEM;
+  if (OneOf(100000)) return -ENOMEM;
 
   switch (nr) {
     INTERCEPT(rt_sigaction);
@@ -606,6 +610,8 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     INTERCEPT(ppoll);
     INTERCEPT(pipe);
     INTERCEPT(pipe2);
+    INTERCEPT(eventfd);
+    INTERCEPT(eventfd2);
     INTERCEPT(kill);
     INTERCEPT(tgkill);
     INTERCEPT(statfs);
@@ -664,6 +670,7 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     SYSCALL(getdents64);
     SYSCALL(getrandom);
     SYSCALL(prlimit64);
+    SYSCALL(capget);
     SYSCALL(getcpu);
     SYSCALL(mincore);
     SYSCALL(sched_getaffinity);
@@ -679,6 +686,7 @@ Result HandleSyscall(const uptr pc, const uptr nr, uptr args[kSyscallArgs]) {
     IGNORE(setitimer);
     IGNORE(getitimer);
     IGNORE(setpriority);
+    IGNORE(capset);
     IGNORE(set_mempolicy);
     IGNORE(clock_nanosleep);
     IGNORE(nanosleep);
