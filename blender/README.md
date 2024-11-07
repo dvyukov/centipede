@@ -26,7 +26,7 @@ Moreover, these auto-generated fuzz targets generally still produce additional
 burden on human experts (code review and maintanance).
 
 `Blender` solves this problem by using a dynamic approach.
-The only requried input is the binary that needs to be tested.
+The only required input is the binary that needs to be tested.
 The binary provides a superset of coverage of all possible individual fuzz
 targets that can be written for the involved code. Moreover, this approach provides
 high fidelity (even manually written fuzz targets can contain bugs).
@@ -113,7 +113,7 @@ Similarly, we can't pretend that a `read` system call returns
 more data than the provided buffer.
 
 Second, the bug oracle becomes tricky. We cannot simply look
-for non-0 exit status, the program will fial a lot since we give
+for non-0 exit status, the program will fail a lot since we give
 it garbage. A trivial example is failing on incorrect command line flags.
 We still can look for [Sanitizers](https://clang.llvm.org/docs/AddressSanitizer.html)
 bug reports since that inevitably means undefined behavior.
